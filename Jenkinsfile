@@ -22,45 +22,45 @@ pipeline {
         stage('Download Maintenance') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
-                    sh 'echo download'
+                    sh 'gulp download'
                 }
             }
         }
         stage('Upload Maintenance') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
-                    sh 'echo upload'
+                    sh 'gulp upload'
                 }
             }
         }
         stage('Receive') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
-                    sh 'echo receive'
+                    sh 'gulp receive'
                 }
-                // archiveArtifacts artifacts: 'job-archive/**/*.*'
+                archiveArtifacts artifacts: 'job-archive/**/*.*'
             }
         }
         stage('Apply-Check') {
             steps {
-                // script {
-                //     def actions = readJSON file: 'holddata/actions.json'
-                //     if (actions.remainingHolds) {
-                //         input message: 'Unresolved holds detected. Please review the results of the receive job in the job-archive/receive artifacts. Proceed to Apply?'
-                //     }
-                // }
-                withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
-                    sh 'echo apply-check'
+                script {
+                     def actions = readJSON file: 'holddata/actions.json'
+                     if (actions.remainingHolds) {
+                         input message: 'Unresolved holds detected. Please review the results of the receive job in the job-archive/receive artifacts. Proceed to Apply?'
+                     }
                 }
-                // archiveArtifacts artifacts: 'job-archive/**/*.*'
+                withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
+                    sh 'gulp apply-check'
+                }
+                archiveArtifacts artifacts: 'job-archive/**/*.*'
             }
         }
         stage('Apply') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
-                    sh 'echo apply'
+                    sh 'gulp apply'
                 }
-                // archiveArtifacts artifacts: 'job-archive/**/*.*'
+                archiveArtifacts artifacts: 'job-archive/**/*.*'
             }
         }
         stage('Deploy') {
@@ -68,16 +68,16 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'eosCreds', usernameVariable: 'ZOWE_OPT_USER', passwordVariable: 'ZOWE_OPT_PASSWORD')]) {
                     //To deploy the maintenace, an OPS profile needs to be created since profile options are not exposed on the command line
                     sh 'zowe profiles create ops Jenkins --host $ZOWE_OPT_HOST --port 6007 --protocol http --user $ZOWE_OPT_USER --password $ZOWE_OPT_PASSWORD'
-                    sh 'echo stop'
-                    sh 'echo copy'
-                    // script {
-                    //     def actions = readJSON file: 'holddata/actions.json'
-                    //     if (actions.restart) {
-                    //         sh 'gulp restartWorkflow'
-                    //     }
-                    // }
-                    sh 'echo start'
-                    sh 'echo apf'
+                    sh 'gulp stop'
+                    sh 'gulp copy'
+                    script {
+                        def actions = readJSON file: 'holddata/actions.json'
+                        if (actions.restart) {
+                            sh 'gulp restartWorkflow'
+                        }
+                    }
+                    sh 'gulp start'
+                    sh 'gulp apf'
                 }
             }
         }
