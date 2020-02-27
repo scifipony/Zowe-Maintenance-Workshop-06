@@ -1,0 +1,7 @@
+bin/
+command-archive/
+cust006/
+holddata/
+job-archive/
+mochawesome-report/
+node_modules/
